@@ -1,0 +1,80 @@
+---
+title: "6/30_covid"
+author: "Naveed Malik"
+date: "7/5/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(readxl)
+library(nnet)
+library(caTools)
+df = read.csv('covid-08-11-2020.csv')
+df$mentalHealthImpact <- as.factor(df$mentalHealthImpact)
+df$X.age <- as.factor(df$X.age)
+
+# df$disorientation + df$fatigue+df$bodyAche 
+ cols = c("diarrhea","difficultyBreathing","headAche","persistentCough", "temperature",
+"lossOfSmell","soreThroat")
+
+df$symptom_score <- rowSums(df[,cols])
+table(df$symptom_score)
+
+df$symptom <- ifelse(df$symptom_score>=1, 1,0)
+table(df$symptom)
+
+#fixing classification imbalance issue
+
+
+
+#split data
+set.seed(88)
+
+
+#trial 2 
+df$real_symp <- ifelse(df$noSymptoms == 0, 1,0)
+
+simp <- which(df$real_symp == 1)
+no_simp <- which(df$real_symp == 0)
+
+pick_nosimp<- sample(simp, 3856)
+pick_simp <- sample(no_simp,5000)
+
+df2 <- df[c(pick_simp,pick_nosimp), ]
+set.seed(88)
+spl <- sample.split(df2$noSymptom, SplitRatio=0.7)
+covid_train <- df2[spl,]
+covid_test <- df2[!spl,]
+
+covid.glm <- glm(symptom ~ exposureLevel + faceCovering + gender + healthIssues + householdHeadcount + leftHomeTimes + leftForExercise + leftForOther + leftForWork  , data = covid_train, family = "binomial" )
+summary(covid.glm)
+df
+covid_predict = predict(covid.glm, newdata = covid_test, type = "response")
+covid.predict
+
+confMat = table(covid_test1$real_symp, covid_predict >= .5)
+accuracy_glm = sum(diag(confMat))/nrow(covid_test)
+accuracy_glm
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
